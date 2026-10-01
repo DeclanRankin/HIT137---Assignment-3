@@ -26,15 +26,19 @@ grid_4.pack(side=tk.LEFT)
 grid_5 = tk.Radiobutton(grid_frame, text="5x5", variable=grid_size, value=5)
 grid_5.pack(side=tk.LEFT)
 
-image_label = tk.Label(root)
-image_label.pack()
-
 move_count = 0
 move_label = tk.Label(root, text="Moves: 0")
 move_label.pack()
 
-puzlle_frame = tk.Frame()
-puzlle_frame.pack()
+images_frame = tk.Frame(root)
+images_frame.pack(pady=10)
+
+image_label = tk.Label(images_frame)
+image_label.pack(side=tk.LEFT, padx=10)
+
+puzlle_frame = tk.Frame(images_frame)
+puzlle_frame.pack(side=tk.LEFT, padx=10)
+
 
 def check_solved():
     for i in range(len(tiles)):
@@ -105,7 +109,7 @@ def load_image():
     print("Select grid size:", selected_grid_size)
 
     filename = filedialog.askopenfilename(title="Choose an Image", 
-                                          filetypes=[("Image Files", "*.jpg;*.jpeg;*.png*.bmp")])
+                                          filetypes=[("Image Files", "*.jpg;*.jpeg;*.png *.bmp")])
     if filename:
         image = cv2.imread(filename)
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
@@ -113,6 +117,11 @@ def load_image():
         tile_size = display_size // selected_grid_size
         image_size = tile_size * selected_grid_size
         image = cv2.resize(image, (image_size , image_size))
+        reference_image = cv2.resize(image, (225, 225), interpolation=cv2.INTER_AREA)
+        original_photo = ImageTk.PhotoImage(Image.fromarray(reference_image))
+        original_photo = ImageTk.PhotoImage(Image.fromarray(image))
+        image_label.config(image=original_photo)
+        image_label.image = original_photo
 
         # Split the image into puzzle tiles
         tiles = []
