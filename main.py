@@ -1,5 +1,5 @@
 import tkinter as tk
-from tkinter import filedialog, messagebox
+from tkinter import filedialog, messagebox, ttk, Tk
 import cv2
 from PIL import Image, ImageTk
 import random
@@ -36,7 +36,7 @@ images_frame.pack(pady=10)
 image_label = tk.Label(images_frame)
 image_label.pack(side=tk.LEFT, padx=10)
 
-puzlle_frame = tk.Frame(images_frame)
+puzlle_frame = tk.Frame(images_frame, highlightbackground="gray", highlightcolor="red", highlightthickness=3)
 puzlle_frame.pack(side=tk.LEFT, padx=10)
 
 
@@ -51,6 +51,7 @@ def tile_clicked(index):
     global tiles
     global move_count
 
+    puzlle_frame.configure(bg="red", highlightbackground="red")
     print("Tile clicked", index)
 
     #First tile selection
@@ -60,22 +61,26 @@ def tile_clicked(index):
     #Second tile selection
     else:
         second_tile = index
-       
-        # Swap the two tiles
-        tiles[selected_tile], tiles[second_tile] = tiles[second_tile], tiles[selected_tile]        
-        move_count += 1
-        move_label.config(text=f"Moves: {move_count}")
 
-        print("Swapping tiles:", selected_tile, "and", second_tile)
+        if second_tile == selected_tile:
+            print("Deselecting Tile")
+        else:
+            # Swap the two tiles
+            tiles[selected_tile], tiles[second_tile] = tiles[second_tile], tiles[selected_tile]        
+            move_count += 1
+            move_label.config(text=f"Moves: {move_count}")
 
-        selected_tile = None
-        display_tiles()
+            print("Swapping tiles:", selected_tile, "and", second_tile)
+
+            selected_tile = None
+            display_tiles()
     if check_solved():
         print("Puzzle solved!")
         messagebox.showinfo("Congratulations!", f"You solved the puzzle in {move_count} moves!")
 
 def display_tiles():
     #Remove the old buttons
+    global tile_frame
     for widget in puzlle_frame.winfo_children():
         widget.destroy()
 
@@ -89,7 +94,20 @@ def display_tiles():
         row = index // grid_size.get()
         column = index % grid_size.get()
 
-        tile_button = tk.Button(puzlle_frame, image=tile_photo, borderwidth=1, relief="solid", command=lambda i=index: tile_clicked(i))
+        # tile_frame = tk.Frame(puzlle_frame,
+        #     highlightbackground="gray",
+        #     highlightcolor="red",
+        #     highlightthickness=3,
+        #     bd=0)
+        # tile_frame.grid(row=row,column=column)
+
+        tile_button = tk.Button(
+            puzlle_frame, 
+            image=tile_photo, borderwidth=1, 
+            relief="solid", 
+            bg="gray",
+            bd=0,
+            command=lambda i=index: tile_clicked(i))
         tile_button.grid(row=row, column=column)
     #Keep reference to the images
     puzlle_frame.tile_photos = tile_photos
