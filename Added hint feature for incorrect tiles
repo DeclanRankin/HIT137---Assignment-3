@@ -1,0 +1,16 @@
+def use_hint(self):
+    if self.hints_used >= 3:
+        return None
+
+    incorrect = self.incorrect_positions()
+
+    if not incorrect:
+        return None
+
+    current_position = random.choice(incorrect)
+    tile = self.tiles[current_position]
+    home_position = tile.tile_id
+
+    self.hints_used += 1
+
+    return current_position, home_position
