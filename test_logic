@@ -1,0 +1,87 @@
+"""Non-GUI checks for the puzzle model (run: python test_logic.py)."""
+import itertools
+import cv2
+import numpy as np
+from main import Puzzle, Tile
+
+rng = np.random.default_rng(1)
+NOISE = rng.integers(0, 255, (300, 700, 3), dtype=np.uint8)   # non-square, asymmetric
+
+
+def manual_solve(puzzle):
+    """Solve using ONLY what the player can do: swap, rotate, flip-horizontal."""
+    n = len(puzzle.tiles)
+    for pos in range(n):
+        home = next(q for q in range(n) if puzzle.tiles[q].tile_id == pos)
+        if home != pos:
+            puzzle.swap_tiles(pos, home)
+    for pos in range(n):
+        if puzzle.tiles[pos].mirrored:
+            puzzle.flip_tile_horizontal(pos)
+        while puzzle.tiles[pos].rotation != 0:
+            puzzle.rotate_tile(pos)
+
+
+def test_orientation_matches_visuals():
+    base = NOISE[:100, :100].copy()
+    cw = lambda im: cv2.rotate(im, cv2.ROTATE_90_CLOCKWISE)
+    fh = lambda im: cv2.flip(im, 1)
+    fv = lambda im: cv2.flip(im, 0)
+    for ops in itertools.product(["r", "h", "v"], repeat=4):
+        tile, expected = Tile(0, base), base
+        for op in ops:
+            if op == "r":
+                tile.rotate_clockwise(); expected = cw(expected)
+            elif op == "h":
+                tile.flip_horizontal(); expected = fh(expected)
+            else:
+                tile.flip_vertical(); expected = fv(expected)
+        assert (tile.get_display_image() == expected).all(), ops
+        looks_right = (expected == base).all()
+        assert tile.is_correct_orientation() == looks_right, ops
+
+
+def test_scramble_and_manual_solve():
+    for size in (3, 4, 5):
+        for difficulty in ("Easy", "Standard", "Hard"):
+            for _ in range(200):
+                p = Puzzle(NOISE, size, difficulty)
+                expected = (450 // size) * size
+                assert p.image.shape[:2] == (expected, expected)
+                assert len(p.tiles) == size * size
+                assert not p.is_solved()
+                base = Puzzle.TRANSFORMATION_COUNTS[size]
+                mult = Puzzle.DIFFICULTY_MULTIPLIER[difficulty]
+                want = min(max(3, int(round(base * mult))), size * size - 1)
+                assert p.applied_transformations == want
+                manual_solve(p)
+                assert p.is_solved()
+
+
+def test_model_rules():
+    p = Puzzle(NOISE, 3)
+    p.solve()
+    assert p.is_solved() and p.move_count == 0 and p.completed
+    q = Puzzle(NOISE, 4)
+    for _ in range(Puzzle.MAX_HINTS):
+        assert q.use_hint() is not None
+    assert q.use_hint() is None
+    q.expire()
+    assert not q.is_active and q.time_limit == 20 * 16
+    q.solve()
+    assert q.is_solved()
+
+
+def test_register_move_detects_completion():
+    p = Puzzle(NOISE, 3)
+    manual_solve(p)          # already solved, but not yet registered
+    p.register_move()
+    assert p.completed and p.move_count == 1
+
+
+if __name__ == "__main__":
+    test_orientation_matches_visuals()
+    test_scramble_and_manual_solve()
+    test_model_rules()
+    test_register_move_detects_completion()
+    print("All puzzle model checks passed.")
